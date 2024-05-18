@@ -1,0 +1,9 @@
+html * {
+  font-family: "Roboto", sans-serif;
+}
+
+/* Bootstrap tweaks */
+.card:hover {
+  cursor: pointer;
+  box-shadow: 0 0 0.2rem gray;
+}
