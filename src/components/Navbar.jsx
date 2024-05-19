@@ -69,13 +69,13 @@ const Navbar = ({ admin }) => {
       <div className="container-fluid">
         <div className="navbar-brand mb-0 h1 me-auto">
           <img
-            src={import.meta.env.BASE_URL + "logo.png"}
+            src={import.meta.env.BASE_URL + "logo.jpeg"}
             alt="Logo"
             width="30"
             height="24"
             className="d-inline-block align-text-top"
           />
-          The Markatplace
+          Goostrey PTA Ball Auction
         </div>
         <div className="row row-cols-auto">
           <div className="navbar-brand">{user ? `Hi ${user.displayName}` : ""}</div>
