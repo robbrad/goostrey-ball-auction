@@ -41,12 +41,14 @@ const Navbar = ({ admin }) => {
 
   const handleAuth = () => {
     if (user) {
-      signOut(auth).then(() => {
-        setUser(null);
-        setAuthButtonText("Sign up");
-      }).catch((error) => {
-        console.error('Error signing out:', error);
-      });
+      signOut(auth)
+        .then(() => {
+          setUser(null);
+          setAuthButtonText("Sign up");
+        })
+        .catch((error) => {
+          console.error('Error signing out:', error);
+        });
     } else {
       openModal(ModalTypes.SIGN_UP);
     }
@@ -54,6 +56,10 @@ const Navbar = ({ admin }) => {
 
   const handleLogin = () => {
     openModal(ModalTypes.LOGIN);
+  };
+
+  const handleForgotPassword = () => {
+    openModal(ModalTypes.FORGOT_PASSWORD);
   };
 
   return (
@@ -74,10 +80,15 @@ const Navbar = ({ admin }) => {
           {admin && (
             <button onClick={handleAdmin} className="btn btn-secondary me-2">{adminButtonText}</button>
           )}
-          {!user && (
-            <button onClick={handleLogin} className="btn btn-secondary me-2">Login</button>
+          {user ? (
+            <button onClick={handleAuth} className="btn btn-secondary me-2">{authButtonText}</button>
+          ) : (
+            <>
+              <button onClick={handleLogin} className="btn btn-secondary me-2">Login</button>
+              <button onClick={handleAuth} className="btn btn-secondary me-2">{authButtonText}</button>
+              <button onClick={handleForgotPassword} className="btn btn-secondary me-2">Forgot Password</button>
+            </>
           )}
-          <button onClick={handleAuth} className="btn btn-secondary me-2">{authButtonText}</button>
         </div>
       </div>
     </nav>
@@ -85,7 +96,7 @@ const Navbar = ({ admin }) => {
 };
 
 Navbar.propTypes = {
-  admin: PropTypes.bool
+  admin: PropTypes.bool,
 };
 
 export default Navbar;

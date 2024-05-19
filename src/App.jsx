@@ -11,7 +11,7 @@ import { AutoSignIn } from "./firebase/AutoSignIn";
 import { ItemsProvider } from "./contexts/ItemsProvider";
 import { ModalsProvider } from "./contexts/ModalsProvider";
 import Navbar from "./components/Navbar";
-import { SignUpModal, LoginModal } from "./components/Modal";
+import { SignUpModal, LoginModal, ForgotPasswordModal } from "./components/Modal";
 import HomePage from "./pages/Home";
 import AdminPage from "./pages/Admin";
 import Footer from "./components/Footer";
@@ -39,6 +39,7 @@ function App() {
         <Navbar admin={admin} />
         <LoginModal />
         <SignUpModal />
+        <ForgotPasswordModal />
         <Routes>
           <Route path={import.meta.env.BASE_URL} Component={HomePage} />
           <Route
@@ -60,6 +61,6 @@ function App() {
 App.propTypes = {
   children: PropTypes.arrayOf(PropTypes.element),
   condition: PropTypes.bool
-}
+};
 
 export default App;

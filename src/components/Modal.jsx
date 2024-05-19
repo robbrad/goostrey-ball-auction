@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { itemStatus } from '../utils/itemStatus';
 import { formatField, formatMoney } from '../utils/formatString';
-import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail  } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { ModalsContext } from '../contexts/ModalsProvider';
@@ -182,6 +182,7 @@ const SignUpModal = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [valid, setValid] = useState('');
+  const [feedback, setFeedback] = useState('');
 
   const handleSignUp = async () => {
     try {
@@ -189,14 +190,17 @@ const SignUpModal = () => {
       const user = userCredential.user;
       await updateProfile(user, { displayName: email });
       await setDoc(doc(db, 'users', user.uid), { name: email, admin: '' });
-      console.debug(`signUp() write to users/${user.uid}`);
+      await sendEmailVerification(user);
       setValid('is-valid');
+      setFeedback('Sign up successful! Verification email sent.');
       setTimeout(() => {
         closeModal();
         setValid('');
+        setFeedback('');
       }, 1000);
     } catch (error) {
       setValid('is-invalid');
+      setFeedback('Error signing up. Please try again.');
       console.error('Error signing up:', error);
     }
   };
@@ -212,6 +216,7 @@ const SignUpModal = () => {
     if (name === 'email') setEmail(value);
     if (name === 'password') setPassword(value);
     setValid('');
+    setFeedback('');
   };
 
   return (
@@ -222,93 +227,6 @@ const SignUpModal = () => {
           attached to your device signature.
         </p>
         <p>The email will be used as your username for bidding!</p>
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className='form-floating mb-3'>
-            <input
-              autoFocus
-              id='email-input'
-              type='email'
-              name='email'
-              className={`form-control ${valid}`}
-              value={email}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder='Enter your email'
-            />
-            <label>Email</label>
-          </div>
-          <div className='form-floating mb-3'>
-            <input
-              id='password-input'
-              type='password'
-              name='password'
-              className={`form-control ${valid}`}
-              value={password}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder='Enter your password'
-            />
-            <label>Password</label>
-          </div>
-        </form>
-      </div>
-      <div className='modal-footer'>
-        <button type='button' className='btn btn-secondary' onClick={closeModal}>
-          Cancel
-        </button>
-        <button
-          type='submit'
-          className='btn btn-primary'
-          onClick={handleSignUp}
-        >
-          Sign up
-        </button>
-      </div>
-    </Modal>
-  );
-};
-
-const LoginModal = () => {
-  const { closeModal } = useContext(ModalsContext);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [valid, setValid] = useState('');
-  const [feedback, setFeedback] = useState('');
-
-  const handleLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setValid('is-valid');
-      setFeedback('Login successful!');
-      setTimeout(() => {
-        closeModal();
-        setValid('');
-        setFeedback('');
-      }, 1000);
-    } catch (error) {
-      setValid('is-invalid');
-      setFeedback('Error logging in. Please check your credentials.');
-      console.error('Error logging in:', error);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'email') setEmail(value);
-    if (name === 'password') setPassword(value);
-    setValid('');
-    setFeedback('');
-  };
-
-  return (
-    <Modal type={ModalTypes.LOGIN} title="Login to Markatplace Auction">
-      <div className='modal-body'>
         <form onSubmit={(e) => e.preventDefault()}>
           <div className='form-floating mb-3'>
             <input
@@ -349,6 +267,110 @@ const LoginModal = () => {
         <button
           type='submit'
           className='btn btn-primary'
+          onClick={handleSignUp}
+        >
+          Sign up
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+export default SignUpModal;
+
+const LoginModal = () => {
+  const { closeModal, currentModal, openModal } = useContext(ModalsContext);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [valid, setValid] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  if (currentModal !== ModalTypes.LOGIN) return null;
+
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setValid('is-valid');
+      setFeedback('Login successful!');
+      setTimeout(() => {
+        closeModal();
+        setValid('');
+        setFeedback('');
+      }, 1000);
+    } catch (error) {
+      setValid('is-invalid');
+      setFeedback('Error logging in. Please check your credentials.');
+      console.error('Error logging in:', error);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'email') setEmail(value);
+    if (name === 'password') setPassword(value);
+    setValid('');
+    setFeedback('');
+  };
+
+  const handleForgotPassword = () => {
+    closeModal();
+    openModal(ModalTypes.FORGOT_PASSWORD);
+  };
+
+  return (
+    <Modal type={ModalTypes.LOGIN} title="Login to Markatplace Auction">
+      <div className='modal-body'>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className='form-floating mb-3'>
+            <input
+              autoFocus
+              id='email-input'
+              type='email'
+              name='email'
+              className={`form-control ${valid}`}
+              value={email}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your email'
+            />
+            <label>Email</label>
+          </div>
+          <div className='form-floating mb-3'>
+            <input
+              id='password-input'
+              type='password'
+              name='password'
+              className={`form-control ${valid}`}
+              value={password}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your password'
+            />
+            <label>Password</label>
+          </div>
+          <div className={`invalid-feedback ${valid === 'is-invalid' ? 'd-block' : ''}`}>
+            {feedback}
+          </div>
+          <div className="text-end">
+            <button type="button" className="btn btn-link p-0" onClick={handleForgotPassword}>
+              Forgot Password?
+            </button>
+          </div>
+        </form>
+      </div>
+      <div className='modal-footer'>
+        <button type='button' className='btn btn-secondary' onClick={closeModal}>
+          Cancel
+        </button>
+        <button
+          type='submit'
+          className='btn btn-primary'
           onClick={handleLogin}
         >
           Login
@@ -358,4 +380,82 @@ const LoginModal = () => {
   );
 };
 
-export { ItemModal, SignUpModal, LoginModal };
+
+const ForgotPasswordModal = () => {
+  const { closeModal, currentModal } = useContext(ModalsContext);
+  const [email, setEmail] = useState('');
+  const [valid, setValid] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  if (currentModal !== ModalTypes.FORGOT_PASSWORD) return null;
+
+  const handlePasswordReset = async () => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setValid('is-valid');
+      setFeedback('Password reset email sent!');
+      setTimeout(() => {
+        closeModal();
+        setValid('');
+        setFeedback('');
+      }, 1000);
+    } catch (error) {
+      setValid('is-invalid');
+      setFeedback('Error sending password reset email. Please try again.');
+      console.error('Error sending password reset email:', error);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handlePasswordReset();
+    }
+  };
+
+  const handleChange = (e) => {
+    setEmail(e.target.value);
+    setValid('');
+    setFeedback('');
+  };
+
+  return (
+    <Modal type={ModalTypes.FORGOT_PASSWORD} title='Reset your password'>
+      <div className='modal-body'>
+        <p>Enter your email address to receive a password reset email.</p>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className='form-floating mb-3'>
+            <input
+              autoFocus
+              id='email-input'
+              type='email'
+              name='email'
+              className={`form-control ${valid}`}
+              value={email}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your email'
+            />
+            <label>Email</label>
+          </div>
+          <div className={`invalid-feedback ${valid === 'is-invalid' ? 'd-block' : ''}`}>
+            {feedback}
+          </div>
+        </form>
+      </div>
+      <div className='modal-footer'>
+        <button type='button' className='btn btn-secondary' onClick={closeModal}>
+          Cancel
+        </button>
+        <button
+          type='submit'
+          className='btn btn-primary'
+          onClick={handlePasswordReset}
+        >
+          Send email
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+export { ItemModal, SignUpModal, LoginModal, ForgotPasswordModal };
