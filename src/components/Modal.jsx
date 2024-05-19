@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { itemStatus } from '../utils/itemStatus';
 import { formatField, formatMoney } from '../utils/formatString';
-import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendPasswordResetEmail  } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { ModalsContext } from '../contexts/ModalsProvider';
@@ -76,6 +76,13 @@ const ItemModal = () => {
   };
 
   const handleSubmitBid = () => {
+    // Check if user is logged in
+    if (!auth.currentUser) {
+      setFeedback('You must be logged in to place a bid!');
+      setValid('is-invalid');
+      return;
+    }
+
     // Get bid submission time as early as possible
     let nowTime = new Date().getTime();
     // Disable bid submission while we submit the current request
@@ -170,7 +177,7 @@ const ItemModal = () => {
         </div>
         <label className='form-label'>Enter {minBid} or more</label>
         <p className='text-muted'>
-          (This is just a demo, you&apos;re not bidding real money)
+          (Good Luck!)
         </p>
       </div>
     </Modal>
@@ -274,8 +281,6 @@ const SignUpModal = () => {
     </Modal>
   );
 };
-
-export default SignUpModal;
 
 const LoginModal = () => {
   const { closeModal, currentModal, openModal } = useContext(ModalsContext);
@@ -386,7 +391,6 @@ const LoginModal = () => {
     </Modal>
   );
 };
-
 
 const ForgotPasswordModal = () => {
   const { closeModal, currentModal } = useContext(ModalsContext);
