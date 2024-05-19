@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import PropTypes from "prop-types";
 import { useNavigate, useLocation } from "react-router";
-import { auth } from "../firebase/config";
+import { auth, signInWithEmailAndPassword } from "../firebase/config";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ModalsContext } from "../contexts/ModalsProvider";
 import { ModalTypes } from "../utils/modalTypes";
@@ -12,6 +12,7 @@ const Navbar = ({ admin }) => {
   const [user, setUser] = useState(null);
   const [authButtonText, setAuthButtonText] = useState("Sign up");
   const [adminButtonText, setAdminButtonText] = useState("Admin");
+  const [loginError, setLoginError] = useState("");
   const location = useLocation();
 
   useEffect(() => {
@@ -55,6 +56,7 @@ const Navbar = ({ admin }) => {
   };
 
   const handleLogin = () => {
+    // Open login modal, and handle login logic inside the modal component
     openModal(ModalTypes.LOGIN);
   };
 
@@ -91,6 +93,7 @@ const Navbar = ({ admin }) => {
           )}
         </div>
       </div>
+      {loginError && <div className="alert alert-danger">{loginError}</div>}
     </nav>
   );
 };

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { itemStatus } from '../utils/itemStatus';
 import { formatField, formatMoney } from '../utils/formatString';
-import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail  } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendPasswordResetEmail  } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { ModalsContext } from '../contexts/ModalsProvider';
@@ -190,7 +190,6 @@ const SignUpModal = () => {
       const user = userCredential.user;
       await updateProfile(user, { displayName: email });
       await setDoc(doc(db, 'users', user.uid), { name: email, admin: '' });
-      await sendEmailVerification(user);
       setValid('is-valid');
       setFeedback('Sign up successful! Verification email sent.');
       setTimeout(() => {
@@ -289,14 +288,22 @@ const LoginModal = () => {
 
   const handleLogin = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setValid('is-valid');
-      setFeedback('Login successful!');
-      setTimeout(() => {
-        closeModal();
-        setValid('');
-        setFeedback('');
-      }, 1000);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        await signOut(auth);
+        setValid('is-invalid');
+        setFeedback('Please verify your email before logging in.');
+      } else {
+        setValid('is-valid');
+        setFeedback('Login successful!');
+        setTimeout(() => {
+          closeModal();
+          setValid('');
+          setFeedback('');
+        }, 1000);
+      }
     } catch (error) {
       setValid('is-invalid');
       setFeedback('Error logging in. Please check your credentials.');
