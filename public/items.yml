@@ -20,8 +20,8 @@
 
 - id: 3
   primaryImage: logo
-  title: School Private View
-  subtitle: School exhibition private view 
+  title: School Exhibition Private Viewing
+  subtitle: School exhibition private viewing
   detail: Delight in a private viewing of the school exhibition with your loved ones. A perfect family outing!
   secondaryImage: logo
   currency: £
@@ -40,9 +40,9 @@
 
 - id: 5
   primaryImage: Golf
-  title: Sadiway Golf Club
+  title: Sandiway Golf Club
   subtitle: 4 Ball Gift Voucher
-  detail: Tee off with a 4 Ball Gift Voucher at Sadiway Golf Club! Perfect for a thrilling day on the greens with friends.
+  detail: Tee off with a 4 Ball Gift Voucher at Sandiway Golf Club! Perfect for a thrilling day on the greens with friends.
   secondaryImage: Golf
   currency: £
   amount: 0
@@ -79,21 +79,21 @@
   endTime: 2024-06-07T22:45:00+00:00
 
 - id: 9
-  primaryImage: qd
-  title: Quirky Devine
-  subtitle: Jewellery Set
-  detail: Sparkle and shine with a unique jewellery set from Quirky Devine. Perfect for adding a touch of glamour to any outfit.
-  secondaryImage: qd
+  primaryImage: ccr
+  title: Cheshire Clinical Reflexology
+  subtitle: A Luxury reflexology facial
+  detail: A Luxury reflexology facial
+  secondaryImage: ccr
   currency: £
   amount: 0
   endTime: 2024-06-07T22:45:00+00:00
 
 - id: 10
-  primaryImage: logo
+  primaryImage: sc
   title: Signed Stoke City Football Shirt
   subtitle: 23/24 Season
   detail: Own a piece of football history with a signed Stoke City football shirt from the 23/24 season. A must-have for any fan!
-  secondaryImage: logo
+  secondaryImage: sc
   currency: £
   amount: 0
   endTime: 2024-06-07T22:45:00+00:00
@@ -149,11 +149,11 @@
   endTime: 2024-06-07T22:45:00+00:00
 
 - id: 16
-  primaryImage: logo
+  primaryImage: mc
   title: Signed Manchester City Football Shirt
-  subtitle: 22/23 Season by Ruban Dias
-  detail: Celebrate the glory of Manchester City with a shirt signed by Ruban Dias from the 22/23 season. A collector's dream!
-  secondaryImage: logo
+  subtitle: 22/23 Season by Ruben Dias
+  detail: Celebrate the glory of Manchester City with a shirt signed by Ruben Dias from the 22/23 season. A collector's dream!
+  secondaryImage: mc
   currency: £
   amount: 0
   endTime: 2024-06-07T22:45:00+00:00
@@ -174,6 +174,26 @@
   subtitle: 1 week of afterschool childcare 
   detail: 1 week of afterschool childcare 
   secondaryImage: Allstars
+  currency: £
+  amount: 0
+  endTime: 2024-06-07T22:45:00+00:00
+
+- id: 19
+  primaryImage: be
+  title: Birtles Equestrian
+  subtitle: Equestrian Gift Voucher
+  detail: £40 gift voucher to spend at Birtles Equestrian on horse riding lessons
+  secondaryImage: be
+  currency: £
+  amount: 0
+  endTime: 2024-06-07T22:45:00+00:00
+
+- id: 20
+  primaryImage: vic
+  title: The Vicarage
+  subtitle: Afternoon Tea for two
+  detail: Voucher for afternoon tea for two and fizz!
+  secondaryImage: vic
   currency: £
   amount: 0
   endTime: 2024-06-07T22:45:00+00:00
