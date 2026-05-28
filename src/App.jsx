@@ -20,6 +20,7 @@ import Footer from "./components/Footer";
 import ToastNotification from "./components/ToastNotification";
 
 const MyBidsPage = lazy(() => import("./pages/MyBids"));
+const UserManagementPage = lazy(() => import("./pages/UserManagement"));
 
 function ProtectedRoute({ children, roles }) {
   const { user, role, admin } = useAuth();
@@ -75,6 +76,16 @@ function App() {
             element={
               <ProtectedRoute roles={["admin", "editor"]}>
                 <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={import.meta.env.BASE_URL + "users"}
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Suspense fallback={<div className="container mt-4">Loading...</div>}>
+                  <UserManagementPage />
+                </Suspense>
               </ProtectedRoute>
             }
           />

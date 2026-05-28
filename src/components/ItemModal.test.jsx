@@ -20,6 +20,7 @@ vi.mock("firebase/firestore", () => ({
   setDoc: vi.fn(),
   updateDoc: (...args) => mockUpdateDoc(...args),
   getFirestore: vi.fn(),
+  Timestamp: { now: () => ({ seconds: 1234567890, nanoseconds: 0 }) },
 }));
 
 // Mock firebase config

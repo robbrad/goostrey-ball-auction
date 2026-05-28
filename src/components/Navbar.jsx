@@ -17,6 +17,10 @@ const Navbar = () => {
 
   const [adminButtonText, setAdminButtonText] = useState("Admin");
 
+  const handleUsers = () => {
+    navigate(import.meta.env.BASE_URL + "users");
+  };
+
   const handleAdmin = () => {
     if (location.pathname.includes("admin")) {
       navigate(import.meta.env.BASE_URL);
@@ -67,6 +71,11 @@ const Navbar = () => {
           {hasAdminAccess && (
             <button onClick={handleAdmin} className="btn btn-secondary me-2">
               {adminButtonText}
+            </button>
+          )}
+          {effectiveRole === "admin" && (
+            <button onClick={handleUsers} className="btn btn-secondary me-2">
+              Users
             </button>
           )}
           {user && (
