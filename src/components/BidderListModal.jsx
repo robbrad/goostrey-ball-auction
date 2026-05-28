@@ -34,13 +34,15 @@ const BidderListModal = ({ show, onHide, item }) => {
         getDoc(doc(db, "users", uid))
           .then((snap) => ({
             uid,
-            name: snap.exists() ? snap.get("name") || "Unknown" : "Unknown",
+            firstName: snap.exists() ? snap.get("firstName") || "" : "",
+            surname: snap.exists() ? snap.get("surname") || "" : "",
+            email: snap.exists() ? snap.get("email") || "" : "",
           }))
-          .catch(() => ({ uid, name: "Unknown" }))
+          .catch(() => ({ uid, firstName: "Unknown", surname: "", email: "" }))
       )
     ).then((users) => {
-      const nameMap = Object.fromEntries(users.map((u) => [u.uid, u.name]));
-      setBidders(sorted.map((b) => ({ ...b, name: nameMap[b.uid] })));
+      const userMap = Object.fromEntries(users.map((u) => [u.uid, u]));
+      setBidders(sorted.map((b) => ({ ...b, ...userMap[b.uid] })));
       setLoading(false);
     });
   }, [show, item]);
@@ -56,7 +58,7 @@ const BidderListModal = ({ show, onHide, item }) => {
       onClick={onHide}
     >
       <div
-        className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+        className="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-content">
@@ -70,16 +72,32 @@ const BidderListModal = ({ show, onHide, item }) => {
             {loading && <p>Loading bidders...</p>}
             {!loading && !hasBids && <p>No bids placed</p>}
             {!loading && hasBids && (
-              <ul className="list-group">
-                {bidders.map((bidder, index) => (
-                  <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{bidder.name}</span>
-                    <span className="badge bg-primary rounded-pill">
-                      {item ? formatMoney(item.currency, bidder.amount) : `£${bidder.amount}`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="table-responsive">
+                <table className="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>First Name</th>
+                      <th>Surname</th>
+                      <th>Email</th>
+                      <th className="text-end">Bid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bidders.map((bidder, index) => (
+                      <tr key={index}>
+                        <td>{bidder.firstName || "Unknown"}</td>
+                        <td>{bidder.surname || ""}</td>
+                        <td>{bidder.email || ""}</td>
+                        <td className="text-end">
+                          <span className="badge bg-primary rounded-pill">
+                            {item ? formatMoney(item.currency, bidder.amount) : `£${bidder.amount}`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
           <div className="modal-footer">

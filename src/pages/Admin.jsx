@@ -1,5 +1,5 @@
 import { useState, useContext, useCallback } from "react";
-import { updateDoc, doc } from "firebase/firestore";
+import { updateDoc, doc, getDocs, collection } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { editItems, deleteItem } from "../firebase/utils";
 import { formatField } from "../utils/formatString";
@@ -119,31 +119,47 @@ function AdminPage() {
   }, []);
 
   // CSV Export handler (admin only)
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (role !== "admin") {
       showMessage("Insufficient permissions", "danger");
       return;
     }
 
-    const csvString = generateCSV(items, {});
+    try {
+      // Fetch all user documents to build the lookup map
+      const usersSnap = await getDocs(collection(db, "users"));
+      const userLookup = {};
+      usersSnap.forEach((userDoc) => {
+        const data = userDoc.data();
+        userLookup[userDoc.id] = {
+          name: data.name || `${data.firstName || ""} ${data.surname || ""}`.trim() || "Unknown",
+          email: data.email || "Unknown",
+        };
+      });
 
-    // Check if there are any data rows (beyond the header)
-    const lines = csvString.split("\n");
-    if (lines.length <= 1) {
-      showMessage("No results available for export", "info");
-      return;
+      const csvString = generateCSV(items, userLookup);
+
+      // Check if there are any data rows (beyond the header)
+      const lines = csvString.split("\n");
+      if (lines.length <= 1) {
+        showMessage("No results available for export", "info");
+        return;
+      }
+
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const today = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `auction-results-${today}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("CSV export failed:", error);
+      showMessage("Failed to export CSV. Please try again.", "danger");
     }
-
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const today = new Date().toISOString().slice(0, 10);
-    link.href = url;
-    link.download = `auction-results-${today}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return (
