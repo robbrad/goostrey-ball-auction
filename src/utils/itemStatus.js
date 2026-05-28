@@ -5,16 +5,20 @@ export const itemStatus = (item) => {
   const ended = item.endTime ? new Date(item.endTime) <= new Date() : false;
 
   let status;
-  if (!ended) {
+  // Check reserve not met: applies regardless of end date
+  // Reserve is not met if: reserve is set AND (no bids exist OR highest bid < reserve)
+  if (item.reservePrice != null && item.reservePrice > 0) {
+    if (bids === 0 || amount < item.reservePrice) {
+      status = "reserve-not-met";
+    } else if (!ended) {
+      status = "active";
+    } else {
+      status = "sold";
+    }
+  } else if (!ended) {
     status = "active";
   } else if (bids === 0) {
-    if (item.reservePrice != null && item.reservePrice > 0) {
-      status = "reserve-not-met";
-    } else {
-      status = "ended-no-bids";
-    }
-  } else if (item.reservePrice != null && item.reservePrice > 0 && amount < item.reservePrice) {
-    status = "reserve-not-met";
+    status = "ended-no-bids";
   } else {
     status = "sold";
   }

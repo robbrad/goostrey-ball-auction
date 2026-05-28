@@ -37,7 +37,7 @@ const MyBidsList = () => {
           </div>
           <span
             className={`badge ${
-              bid.standing === "Winning" ? "bg-success" : "bg-danger"
+              bid.standing === "Winning" ? "bg-success" : bid.standing === "Reserve Not Met" ? "bg-warning text-dark" : "bg-danger"
             }`}
           >
             {bid.standing}

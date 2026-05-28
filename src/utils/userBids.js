@@ -1,9 +1,9 @@
 /**
  * Computes the list of items a user has bid on, with their standing.
  *
- * @param {Array<{ id: number, title: string, bids: Record<number, { amount: number, uid: string }> }>} items - Array of auction items
+ * @param {Array<{ id: number, title: string, bids: Record<number, { amount: number, uid: string }>, reservePrice: number|null, endTime: Date }>} items - Array of auction items
  * @param {string} userId - The user's UID
- * @returns {{ title: string, userHighestBid: number, currentHighestBid: number, standing: "Winning" | "Outbid", itemId: number }[]}
+ * @returns {{ title: string, userHighestBid: number, currentHighestBid: number, standing: "Winning" | "Outbid" | "Reserve Not Met", itemId: number }[]}
  */
 export const computeUserBids = (items, userId) => {
   if (!items || !userId) return [];
@@ -23,7 +23,16 @@ export const computeUserBids = (items, userId) => {
 
     const userHighestBid = Math.max(...userBids.map((b) => b.amount));
     const currentHighestBid = Math.max(...allBids.map((b) => b.amount));
-    const standing = userHighestBid === currentHighestBid ? "Winning" : "Outbid";
+
+    // Check if reserve price is not met
+    let standing;
+    if (item.reservePrice != null && item.reservePrice > 0 && currentHighestBid < item.reservePrice) {
+      standing = "Reserve Not Met";
+    } else if (userHighestBid === currentHighestBid) {
+      standing = "Winning";
+    } else {
+      standing = "Outbid";
+    }
 
     results.push({
       title: item.title,

@@ -29,19 +29,24 @@ export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onRes
   }, [item]);
 
   useEffect(() => {
+    let rafId;
     const updateTimer = () => {
       const now = Date.now();
       const remaining = item.endTime - now;
 
       if (remaining > 0) {
         setTimeLeft(formatTime(remaining));
-        requestAnimationFrame(updateTimer);
+        rafId = requestAnimationFrame(updateTimer);
       } else {
         setTimeLeft("Item Ended");
       }
     };
 
-    requestAnimationFrame(updateTimer);
+    updateTimer();
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [item.endTime]);
 
   const handleExtend = async (minutes) => {

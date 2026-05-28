@@ -27,9 +27,9 @@ describe("itemStatus", () => {
       expect(result.ended).toBe(false);
     });
 
-    it("returns active with bids when endTime is in the future", () => {
+    it("returns active with bids when endTime is in the future and reserve is met", () => {
       const item = {
-        bids: { 1: { amount: 15, uid: "user1" } },
+        bids: { 1: { amount: 25, uid: "user1" } },
         startingPrice: 10,
         endTime: futureDate(),
         reservePrice: 20,
@@ -37,8 +37,21 @@ describe("itemStatus", () => {
       const result = itemStatus(item);
       expect(result.status).toBe("active");
       expect(result.bids).toBe(1);
-      expect(result.amount).toBe(15);
+      expect(result.amount).toBe(25);
       expect(result.winner).toBe("user1");
+    });
+
+    it("returns reserve-not-met when active but highest bid is below reserve", () => {
+      const item = {
+        bids: { 1: { amount: 15, uid: "user1" } },
+        startingPrice: 10,
+        endTime: futureDate(),
+        reservePrice: 20,
+      };
+      const result = itemStatus(item);
+      expect(result.status).toBe("reserve-not-met");
+      expect(result.bids).toBe(1);
+      expect(result.amount).toBe(15);
     });
   });
 

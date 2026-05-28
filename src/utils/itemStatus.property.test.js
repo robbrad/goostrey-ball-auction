@@ -61,18 +61,35 @@ const bidsArb = (minBids, maxBids) =>
   });
 
 describe("Property 5: Item status derivation", () => {
-  it("returns 'active' when endTime is in the future", () => {
+  it("returns 'active' when endTime is in the future and reserve is met or not set", () => {
     fc.assert(
       fc.property(
         futureDateArb,
         startingPriceArb,
-        reservePriceArb,
+        fc.oneof(fc.constant(undefined), fc.constant(null), fc.constant(0)),
         bidsArb(0, 5),
         (endTime, startingPrice, reservePrice, bids) => {
           const item = { endTime, startingPrice, reservePrice, bids };
           const result = itemStatus(item);
           expect(result.status).toBe("active");
           expect(result.ended).toBe(false);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it("returns 'reserve-not-met' when active but reserve is not met", () => {
+    fc.assert(
+      fc.property(
+        futureDateArb,
+        startingPriceArb,
+        fc.double({ min: 100, max: 999999.99, noNaN: true }),
+        (endTime, startingPrice, reservePrice) => {
+          // No bids or bids below reserve
+          const item = { endTime, startingPrice, reservePrice, bids: {} };
+          const result = itemStatus(item);
+          expect(result.status).toBe("reserve-not-met");
         }
       ),
       { numRuns: 100 }
