@@ -13,9 +13,9 @@ describe("sortBidders", () => {
     const result = sortBidders(bids);
 
     expect(result).toEqual([
-      { uid: "user2", amount: 50 },
-      { uid: "user3", amount: 30 },
-      { uid: "user1", amount: 25 },
+      { uid: "user2", amount: 50, timestamp: null },
+      { uid: "user3", amount: 30, timestamp: null },
+      { uid: "user1", amount: 25, timestamp: null },
     ]);
   });
 
@@ -42,6 +42,6 @@ describe("sortBidders", () => {
       1: { amount: 100, uid: "bidder1" },
     };
 
-    expect(sortBidders(bids)).toEqual([{ uid: "bidder1", amount: 100 }]);
+    expect(sortBidders(bids)).toEqual([{ uid: "bidder1", amount: 100, timestamp: null }]);
   });
 });

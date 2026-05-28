@@ -5,7 +5,7 @@ import { itemStatus } from '../utils/itemStatus';
 import { formatField, formatMoney } from '../utils/formatString';
 import { validateName, validateBidAmount } from '../utils/validation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { ModalsContext } from '../contexts/ModalsProvider';
 import { ModalTypes } from '../utils/modalTypes';
@@ -125,6 +125,7 @@ const ItemModal = () => {
       [formatField(activeItem.id, status.bids + 1)]: {
         amount,
         uid: user.uid,
+        timestamp: Timestamp.now(),
       },
     })
       .then(() => {

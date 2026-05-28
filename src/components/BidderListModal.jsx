@@ -6,6 +6,23 @@ import { db } from "../firebase/config";
 import { sortBidders } from "../utils/bidderList";
 import { formatMoney } from "../utils/formatString";
 
+/**
+ * Formats a Firestore Timestamp or Date to a readable date/time string.
+ * Returns "—" if no timestamp is available (older bids).
+ */
+function formatTimestamp(timestamp) {
+  if (!timestamp) return "—";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const BidderListModal = ({ show, onHide, item }) => {
   const [bidders, setBidders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,6 +96,7 @@ const BidderListModal = ({ show, onHide, item }) => {
                       <th>First Name</th>
                       <th>Surname</th>
                       <th>Email</th>
+                      <th>Bid Time</th>
                       <th className="text-end">Bid</th>
                     </tr>
                   </thead>
@@ -88,6 +106,7 @@ const BidderListModal = ({ show, onHide, item }) => {
                         <td>{bidder.firstName || "Unknown"}</td>
                         <td>{bidder.surname || ""}</td>
                         <td>{bidder.email || ""}</td>
+                        <td>{formatTimestamp(bidder.timestamp)}</td>
                         <td className="text-end">
                           <span className="badge bg-primary rounded-pill">
                             {item ? formatMoney(item.currency, bidder.amount) : `£${bidder.amount}`}

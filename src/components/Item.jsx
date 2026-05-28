@@ -53,7 +53,7 @@ export const Item = ({ item }) => {
       case "sold":
         return <span className="badge bg-success">Sold</span>;
       case "reserve-not-met":
-        return <span className="badge bg-warning text-dark">Reserve Not Met</span>;
+        return <span className="badge bg-warning text-dark">Reserve Not Met ({formatMoney(item.currency, item.reservePrice)})</span>;
       case "ended-no-bids":
         return <span className="badge bg-secondary">Item Ended</span>;
       default:
