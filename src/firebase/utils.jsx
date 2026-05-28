@@ -53,12 +53,12 @@ export const unflattenItems = (doc, demo) => {
   for (const [key, value] of Object.entries(doc.data())) {
     const { item, bid } = parseField(key);
 
-    if (!(item in items)) items[item] = { bids: {} };
+    if (!(item in items)) items[item] = { id: item, bids: {} };
 
     if (bid === 0) {
       const { amount, endTime, reservePrice, ...itemData } = value;
       // Spread operator on `items[item]` in case bid 0 wasn't the first to be read
-      items[item] = { ...items[item], ...itemData, startingPrice: amount, endTime: endTime.toDate(), reservePrice: reservePrice ?? null };
+      items[item] = { ...items[item], ...itemData, id: item, startingPrice: amount, endTime: endTime.toDate(), reservePrice: reservePrice ?? null };
       if (demo) {
         const now = new Date();
         items[item].endTime = new Date(
