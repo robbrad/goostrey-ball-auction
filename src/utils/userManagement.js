@@ -5,8 +5,8 @@
  */
 export function sortUsers(users) {
   return [...users].sort((a, b) => {
-    const surnameA = (a.surname || '').toLowerCase();
-    const surnameB = (b.surname || '').toLowerCase();
+    const surnameA = (a.surname || a.name || '').toLowerCase();
+    const surnameB = (b.surname || b.name || '').toLowerCase();
     if (surnameA < surnameB) return -1;
     if (surnameA > surnameB) return 1;
     const firstA = (a.firstName || '').toLowerCase();
@@ -29,8 +29,9 @@ export function filterUsers(users, searchText) {
   return users.filter((user) => {
     const firstName = (user.firstName || '').toLowerCase();
     const surname = (user.surname || '').toLowerCase();
+    const name = (user.name || '').toLowerCase();
     const email = (user.email || '').toLowerCase();
-    return firstName.includes(term) || surname.includes(term) || email.includes(term);
+    return firstName.includes(term) || surname.includes(term) || name.includes(term) || email.includes(term);
   });
 }
 

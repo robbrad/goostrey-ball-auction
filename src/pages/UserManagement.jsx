@@ -123,7 +123,7 @@ export default function UserManagementPage() {
                 const isUpdating = updatingUid === u.uid;
                 return (
                   <tr key={u.uid}>
-                    <td>{u.surname}, {u.firstName}</td>
+                    <td>{u.surname || u.firstName ? `${u.surname || ""}${u.surname && u.firstName ? ", " : ""}${u.firstName || ""}` : u.name || "Unknown"}</td>
                     <td>{u.email}</td>
                     <td>
                       <select
