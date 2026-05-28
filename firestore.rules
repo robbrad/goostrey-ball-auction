@@ -6,21 +6,9 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     match /users/{userId} {
-      // Helper: check if the requester is an admin
-      // Supports: role=="admin", admin==true (boolean), admin=="true" (string), admin=="admin" (string)
-      function isAdmin() {
-        let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-        return userDoc.role == "admin" 
-          || userDoc.admin == true 
-          || userDoc.admin == "true"
-          || userDoc.admin == "admin";
-      }
-
-      // Any authenticated user can read their own document
-      allow read: if request.auth != null && request.auth.uid == userId;
-
-      // Admins can read any user document
-      allow read: if request.auth != null && isAdmin();
+      // Any authenticated user can read user documents
+      // (needed for bidder list display and user management)
+      allow read: if request.auth != null;
 
       // Users can write their own document IF they don't change the role field
       allow write: if request.auth != null
@@ -28,8 +16,9 @@ service cloud.firestore {
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"]));
 
       // Admins can write any user's document (including role changes) but NOT their own role
+      // Supports: role=="admin", admin==true (boolean), admin=="true" (string)
       allow write: if request.auth != null
-        && isAdmin()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
         && !(request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"]));
     }
   }
