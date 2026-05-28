@@ -1,7 +1,7 @@
 import { useState, useContext, useCallback } from "react";
 import { updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { editItems } from "../firebase/utils";
+import { editItems, deleteItem } from "../firebase/utils";
 import { formatField } from "../utils/formatString";
 import { ItemsContext } from "../contexts/ItemsProvider";
 import Table from "../components/Table";
@@ -59,6 +59,16 @@ function AdminPage() {
     }
   };
 
+  const handleDelete = useCallback(async (itemId) => {
+    try {
+      await deleteItem(itemId);
+      showMessage("Item deleted successfully.");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      showMessage("Delete failed. Please try again.", "danger");
+    }
+  }, []);
+
   const handleReservePriceChange = useCallback(async (itemId, value) => {
     const fieldKey = formatField(itemId, 0);
     const reservePrice = value === "" ? null : parseFloat(value);
@@ -112,6 +122,7 @@ function AdminPage() {
       <Table
         reservePriceInput={ReservePriceInput}
         onReservePriceChange={handleReservePriceChange}
+        onDelete={handleDelete}
         items={items}
       />
     </div>

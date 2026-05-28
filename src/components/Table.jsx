@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Row } from "./Row";
 import { ItemsContext } from "../contexts/ItemsProvider";
 
-const Table = ({ reservePriceInput: ReservePriceInputComponent, onReservePriceChange, items: propItems }) => {
+const Table = ({ reservePriceInput: ReservePriceInputComponent, onReservePriceChange, onDelete, items: propItems }) => {
   const { items: contextItems } = useContext(ItemsContext);
   const items = propItems || contextItems;
 
@@ -28,6 +28,7 @@ const Table = ({ reservePriceInput: ReservePriceInputComponent, onReservePriceCh
           item={item}
           reservePriceInput={ReservePriceInputComponent}
           onReservePriceChange={onReservePriceChange}
+          onDelete={onDelete}
         />
     ))}
     </tbody>
@@ -38,6 +39,7 @@ const Table = ({ reservePriceInput: ReservePriceInputComponent, onReservePriceCh
 Table.propTypes = {
   reservePriceInput: PropTypes.elementType,
   onReservePriceChange: PropTypes.func,
+  onDelete: PropTypes.func,
   items: PropTypes.array,
 };
 

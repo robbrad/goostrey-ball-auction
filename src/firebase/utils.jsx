@@ -77,6 +77,46 @@ export const unflattenItems = (doc, demo) => {
   return Object.values(items);
 };
   
+/**
+ * Pure function that computes the updates object for deleting an item.
+ * Marks all fields matching the given item ID for deletion.
+ *
+ * @param {Object} params
+ * @param {number} params.itemId - The item ID to delete
+ * @param {string[]} params.fields - All field keys from the current Firestore document
+ * @param {*} params.deleteFieldSentinel - The sentinel value for field deletion
+ * @returns {Object} The updates object to apply to Firestore
+ */
+export const computeDeleteUpdates = ({ itemId, fields, deleteFieldSentinel }) => {
+  const updates = {};
+  fields
+    .filter((field) => parseField(field).item === itemId)
+    .forEach((field) => {
+      updates[field] = deleteFieldSentinel;
+    });
+  return updates;
+};
+
+/**
+ * Deletes all Firestore fields for a given item ID from the auction/items document.
+ *
+ * @param {number} itemId - The item ID to delete
+ * @throws {Error} If the Firestore operation fails
+ */
+export const deleteItem = async (itemId) => {
+  const docRef = doc(db, "auction", "items");
+  const currentDoc = await getDoc(docRef);
+  const fields = Object.keys(currentDoc.data());
+
+  const updates = computeDeleteUpdates({
+    itemId,
+    fields,
+    deleteFieldSentinel: deleteField(),
+  });
+
+  await updateDoc(docRef, updates);
+};
+
 export const editItems = async (id = undefined, update = false, reset = false) => {
   let response;
   try {

@@ -6,7 +6,7 @@ import { getDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { editItems } from "../firebase/utils";
 
-export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onReservePriceChange }) => {
+export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onReservePriceChange, onDelete }) => {
   const [amount, setAmount] = useState(item.startingPrice);
   const [bids, setBids] = useState(0);
   const [winner, setWinner] = useState("");
@@ -83,6 +83,16 @@ export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onRes
         >
           Update & Reset
         </button>
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm("Are you sure?")) {
+              onDelete(item.id);
+            }
+          }}
+        >
+          Delete
+        </button>
       </td>
     </tr>
   );
@@ -99,4 +109,5 @@ Row.propTypes = {
   }),
   reservePriceInput: PropTypes.elementType,
   onReservePriceChange: PropTypes.func,
+  onDelete: PropTypes.func,
 };
