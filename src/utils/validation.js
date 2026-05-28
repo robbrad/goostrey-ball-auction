@@ -127,8 +127,8 @@ const validateReservePrice = (value) => {
  * Rules:
  * - title must not be empty or whitespace-only
  * - startingPrice must be a non-negative number
- * - endTime must be a valid ISO datetime string representing a future date
- * @param {{ title: string, startingPrice: *, endTime: string }} data
+ * - endTime must be a valid ISO datetime string representing a future date (unless _skipFutureCheck is true)
+ * @param {{ title: string, startingPrice: *, endTime: string, _skipFutureCheck?: boolean }} data
  * @returns {{ valid: boolean, errors: { title?: string, startingPrice?: string, endTime?: string } }}
  */
 const validateItemForm = (data) => {
@@ -151,14 +151,16 @@ const validateItemForm = (data) => {
     errors.startingPrice = "Starting price must be a non-negative number";
   }
 
-  // Validate endTime: must be a valid ISO datetime string in the future
+  // Validate endTime: must be a valid ISO datetime string
+  // If _skipFutureCheck is true (edit mode), only check it's a valid date
   const endDate = new Date(data.endTime);
   if (
     typeof data.endTime !== "string" ||
     data.endTime.trim().length === 0 ||
-    isNaN(endDate.getTime()) ||
-    endDate.getTime() <= Date.now()
+    isNaN(endDate.getTime())
   ) {
+    errors.endTime = "End time must be a valid date";
+  } else if (!data._skipFutureCheck && endDate.getTime() <= Date.now()) {
     errors.endTime = "End time must be a valid future date";
   }
 

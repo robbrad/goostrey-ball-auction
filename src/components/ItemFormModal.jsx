@@ -102,11 +102,12 @@ const ItemFormModal = ({ show, onHide, item, items }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Client-side validation
+    // Client-side validation — skip endTime future check in edit mode
     const validation = validateItemForm({
       title: formData.title,
       startingPrice: formData.startingPrice,
       endTime: formData.endTime,
+      _skipFutureCheck: isEditMode,
     });
 
     if (!validation.valid) {
