@@ -113,7 +113,7 @@ Implement an admin-only User Management page for the Goostrey PTA Ball Auction a
     - Test admin cannot change own role field
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 5.3_
 
-- [ ] 7. Final checkpoint - Ensure all tests pass
+- [x] 7. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
