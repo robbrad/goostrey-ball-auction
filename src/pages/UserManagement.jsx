@@ -77,9 +77,17 @@ export default function UserManagementPage() {
 
   const handleEditClick = (u) => {
     setEditingUser(u.uid);
+    // Populate with existing values, falling back to splitting 'name' for legacy users
+    let firstName = u.firstName || "";
+    let surname = u.surname || "";
+    if (!firstName && !surname && u.name) {
+      const parts = u.name.split(" ");
+      firstName = parts[0] || "";
+      surname = parts.slice(1).join(" ") || "";
+    }
     setEditForm({
-      firstName: u.firstName || "",
-      surname: u.surname || "",
+      firstName,
+      surname,
       email: u.email || "",
     });
   };
