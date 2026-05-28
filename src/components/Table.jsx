@@ -1,9 +1,11 @@
 import { useContext } from "react";
+import PropTypes from "prop-types";
 import { Row } from "./Row";
 import { ItemsContext } from "../contexts/ItemsProvider";
 
-const Table = () => {
-  const { items } = useContext(ItemsContext);
+const Table = ({ reservePriceInput: ReservePriceInputComponent, onReservePriceChange, items: propItems }) => {
+  const { items: contextItems } = useContext(ItemsContext);
+  const items = propItems || contextItems;
 
   return (
     <table className="table table-striped">
@@ -12,20 +14,31 @@ const Table = () => {
         <th>ID</th>
         <th>Title</th>
         <th>Price</th>
+        <th>Reserve Price</th>
         <th>Bids</th>
-        <th>Winning</th>
+        <th>Winner</th>
         <th>Time Left</th>
         <th>Actions</th>
     </tr>
     </thead>
     <tbody>
     {items.map((item) => (
-        <Row key={item.id} item={item} />
+        <Row
+          key={item.id}
+          item={item}
+          reservePriceInput={ReservePriceInputComponent}
+          onReservePriceChange={onReservePriceChange}
+        />
     ))}
     </tbody>
     </table>
   );
 };
 
-export default Table;
+Table.propTypes = {
+  reservePriceInput: PropTypes.elementType,
+  onReservePriceChange: PropTypes.func,
+  items: PropTypes.array,
+};
 
+export default Table;

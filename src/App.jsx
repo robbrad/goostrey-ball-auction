@@ -7,7 +7,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { AutoSignIn } from "./firebase/AutoSignIn";
+import { AuthProvider, useAuth } from "./contexts/AuthProvider";
 import { ItemsProvider } from "./contexts/ItemsProvider";
 import { ModalsProvider } from "./contexts/ModalsProvider";
 import Navbar from "./components/Navbar";
@@ -16,27 +16,35 @@ import HomePage from "./pages/Home";
 import AdminPage from "./pages/Admin";
 import Footer from "./components/Footer";
 
-function App() {
+function ProtectedRoute({ children }) {
+  const { admin } = useAuth();
+  return admin ? children : <Navigate to={import.meta.env.BASE_URL} />;
+}
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node,
+};
+
+const Providers = ({ children }) => {
   const demo = false;
-
-  const { admin } = AutoSignIn();
-
-  const Providers = ({ children }) => {
-    return (
+  return (
+    <AuthProvider>
       <ItemsProvider demo={demo}>
         <ModalsProvider>{children}</ModalsProvider>
       </ItemsProvider>
-    );
-  };
+    </AuthProvider>
+  );
+};
 
-  function ProtectedRoute({ children, condition }) {
-    return condition ? children : <Navigate to={import.meta.env.BASE_URL} />;
-  }
+Providers.propTypes = {
+  children: PropTypes.node,
+};
 
+function App() {
   return (
     <Providers>
       <Router>
-        <Navbar admin={admin} />
+        <Navbar />
         <LoginModal />
         <SignUpModal />
         <ForgotPasswordModal />
@@ -46,7 +54,7 @@ function App() {
             exact
             path={import.meta.env.BASE_URL + "admin"}
             element={
-              <ProtectedRoute condition={admin}>
+              <ProtectedRoute>
                 <AdminPage />
               </ProtectedRoute>
             }
@@ -57,10 +65,5 @@ function App() {
     </Providers>
   );
 }
-
-App.propTypes = {
-  children: PropTypes.arrayOf(PropTypes.element),
-  condition: PropTypes.bool
-};
 
 export default App;

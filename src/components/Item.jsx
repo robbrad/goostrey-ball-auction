@@ -4,19 +4,23 @@ import { itemStatus } from "../utils/itemStatus";
 import { formatTime, formatMoney } from "../utils/formatString";
 import { ModalsContext } from "../contexts/ModalsProvider";
 import { ModalTypes } from "../utils/modalTypes";
+import { useAuth } from "../contexts/AuthProvider";
 
 export const Item = ({ item }) => {
   const { openModal } = useContext(ModalsContext);
+  const { admin } = useAuth();
 
   const [primaryImageSrc, setPrimaryImageSrc] = useState("");
   const [bids, setBids] = useState(0);
   const [amount, setAmount] = useState(item.startingPrice);
   const [timeLeft, setTimeLeft] = useState("");
+  const [status, setStatus] = useState("active");
 
   useEffect(() => {
-    const status = itemStatus(item);
-    setBids(status.bids);
-    setAmount(formatMoney(item.currency, status.amount));
+    const result = itemStatus(item);
+    setBids(result.bids);
+    setAmount(formatMoney(item.currency, result.amount));
+    setStatus(result.status);
   }, [item]);
 
   useEffect(() => {
@@ -26,13 +30,16 @@ export const Item = ({ item }) => {
 
       if (remaining > 0) {
         setTimeLeft(formatTime(remaining));
-        requestAnimationFrame(updateTimer);
       } else {
         setTimeLeft("Item Ended");
       }
     };
 
-    requestAnimationFrame(updateTimer);
+    // Run immediately, then every second
+    updateTimer();
+    const intervalId = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(intervalId);
   }, [item.endTime]);
 
   useEffect(() => {
@@ -40,6 +47,19 @@ export const Item = ({ item }) => {
       setPrimaryImageSrc(src.default)
     })
   }, [item.primaryImage])
+
+  const renderStatusBadge = () => {
+    switch (status) {
+      case "sold":
+        return <span className="badge bg-success">Sold</span>;
+      case "reserve-not-met":
+        return <span className="badge bg-warning text-dark">Reserve Not Met</span>;
+      case "ended-no-bids":
+        return <span className="badge bg-secondary">Item Ended</span>;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="col">
@@ -52,10 +72,18 @@ export const Item = ({ item }) => {
         <div className="card-body">
           <h5 className="title">{item.title}</h5>
           <h6 className="card-subtitle mb-2 text-body-secondary">{item.subtitle}</h6>
+          {renderStatusBadge()}
         </div>
         <ul className="list-group list-group-flush">
           <li className="list-group-item"><strong>{amount}</strong></li>
-          <li className="list-group-item">{bids} bids · {timeLeft}</li>
+          <li className="list-group-item">
+            {bids} bids · {status === "active" ? timeLeft : "Item Ended"}
+          </li>
+          {admin && item.reservePrice != null && item.reservePrice > 0 && (
+            <li className="list-group-item text-muted">
+              Reserve: {formatMoney(item.currency, item.reservePrice)}
+            </li>
+          )}
         </ul>
       </div>
     </div>

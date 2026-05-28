@@ -6,7 +6,7 @@ import { getDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { editItems } from "../firebase/utils";
 
-export const Row = ({ item }) => {
+export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onReservePriceChange }) => {
   const [amount, setAmount] = useState(item.startingPrice);
   const [bids, setBids] = useState(0);
   const [winner, setWinner] = useState("");
@@ -41,11 +41,26 @@ export const Row = ({ item }) => {
     requestAnimationFrame(updateTimer);
   }, [item.endTime]);
 
+  const reservePriceDisplay = item.reservePrice != null && item.reservePrice > 0
+    ? formatMoney(item.currency, item.reservePrice)
+    : "—";
+
   return (
     <tr>
       <td>{item.id}</td>
       <td>{item.title}</td>
       <td>{amount}</td>
+      <td>
+        {ReservePriceInputComponent && onReservePriceChange ? (
+          <ReservePriceInputComponent
+            value={item.reservePrice != null ? String(item.reservePrice) : ""}
+            onChange={onReservePriceChange}
+            itemId={item.id}
+          />
+        ) : (
+          reservePriceDisplay
+        )}
+      </td>
       <td>{bids}</td>
       <td>{winner}</td>
       <td>{timeLeft}</td>
@@ -80,5 +95,8 @@ Row.propTypes = {
     endTime: PropTypes.object.isRequired,
     id: PropTypes.number.isRequired,
     title: PropTypes.string.isRequired,
-  })
-}
+    reservePrice: PropTypes.number,
+  }),
+  reservePriceInput: PropTypes.elementType,
+  onReservePriceChange: PropTypes.func,
+};

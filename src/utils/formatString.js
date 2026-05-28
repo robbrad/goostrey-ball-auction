@@ -34,4 +34,11 @@ const formatField = (item, bid) => {
   return `item${item_padded}_bid${bid_padded}`;
 };
 
-export { formatNumberWithCommas, formatMoney, formatTime, formatField };
+const extractFirstName = (displayName) => {
+  if (!displayName) return "";
+  const spaceIndex = displayName.indexOf(" ");
+  if (spaceIndex === -1) return displayName;
+  return displayName.substring(0, spaceIndex);
+};
+
+export { formatNumberWithCommas, formatMoney, formatTime, formatField, extractFirstName };

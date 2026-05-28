@@ -3,11 +3,13 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 import { itemStatus } from '../utils/itemStatus';
 import { formatField, formatMoney } from '../utils/formatString';
+import { validateName, validateBidAmount } from '../utils/validation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { ModalsContext } from '../contexts/ModalsProvider';
 import { ModalTypes } from '../utils/modalTypes';
+import { useAuth } from '../contexts/AuthProvider';
 
 const Modal = ({ type, title, children }) => {
   const { closeModal, currentModal } = useContext(ModalsContext);
@@ -47,6 +49,7 @@ Modal.propTypes = {
 
 const ItemModal = () => {
   const { activeItem, openModal, closeModal } = useContext(ModalsContext);
+  const { user } = useAuth();
   const [secondaryImageSrc, setSecondaryImageSrc] = useState('');
   const minIncrease = 1;
   const [bid, setBid] = useState('');
@@ -76,28 +79,16 @@ const ItemModal = () => {
   };
 
   const handleSubmitBid = () => {
-    // Check if user is logged in
-    if (!auth.currentUser) {
-      setFeedback('You must be logged in to place a bid!');
+    // Check if user is signed in
+    if (!user) {
+      setFeedback('You must be logged in to place a bid');
       setValid('is-invalid');
       return;
     }
 
-    // Get bid submission time as early as possible
-    let nowTime = new Date().getTime();
-    // Disable bid submission while we submit the current request
-    setIsSubmitting(true);
-    // Ensure item has not already ended
-    if (activeItem.endTime - nowTime < 0) {
-      setFeedback('Sorry, this item has ended!');
-      setValid('is-invalid');
-      delayedClose();
-      setIsSubmitting(false);
-      return;
-    }
-    // Ensure user has provided a username
-    if (auth.currentUser.displayName == null) {
-      setFeedback('You must provide a username before bidding!');
+    // Check if user has a display name (completed registration)
+    if (!user.displayName) {
+      setFeedback('You must register before placing a bid');
       setValid('is-invalid');
       setTimeout(() => {
         openModal(ModalTypes.SIGN_UP);
@@ -106,39 +97,54 @@ const ItemModal = () => {
       }, 1000);
       return;
     }
-    // Ensure input is a monetary value
-    if (!/^\d+(\.\d{1,2})?$/.test(bid)) {
-      setFeedback('Please enter a valid monetary amount!');
+
+    // Check if item has ended
+    const nowTime = new Date().getTime();
+    if (activeItem.endTime - nowTime <= 0) {
+      setFeedback('Sorry, this item has ended!');
       setValid('is-invalid');
-      setIsSubmitting(false);
+      delayedClose();
       return;
     }
-    // Get values needed to place bid
-    const amount = parseFloat(bid);
+
+    // Validate bid amount using validateBidAmount utility
     const status = itemStatus(activeItem);
-    // Ensure input is large enough
-    if (amount < status.amount + minIncrease) {
-      setFeedback('You did not bid enough!');
+    const validation = validateBidAmount(bid, status.amount, minIncrease);
+    if (!validation.valid) {
+      setFeedback(validation.error);
       setValid('is-invalid');
-      setIsSubmitting(false);
       return;
     }
-    // Finally, place bid
+
+    // Disable submit button to prevent duplicate submissions
+    setIsSubmitting(true);
+
+    // Place bid - write to Firestore with user's UID and amount
+    const amount = parseFloat(bid);
     updateDoc(doc(db, 'auction', 'items'), {
       [formatField(activeItem.id, status.bids + 1)]: {
         amount,
-        uid: auth.currentUser.uid,
+        uid: user.uid,
       },
-    });
-    console.debug('handleSubmitBid() write to auction/items');
-    setValid('is-valid');
-    delayedClose();
+    })
+      .then(() => {
+        console.debug('handleSubmitBid() write to auction/items');
+        setValid('is-valid');
+        delayedClose();
+      })
+      .catch((error) => {
+        console.error('Error placing bid:', error);
+        setFeedback('Error placing bid. Please try again.');
+        setValid('is-invalid');
+        setIsSubmitting(false);
+      });
   };
 
   const handleChange = (e) => {
     setBid(e.target.value);
     setIsSubmitting(false);
     setValid('');
+    setFeedback('');
   };
 
   const handleKeyDown = (e) => {
@@ -186,27 +192,55 @@ const ItemModal = () => {
 
 const SignUpModal = () => {
   const { closeModal } = useContext(ModalsContext);
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstNameError, setFirstNameError] = useState('');
+  const [surnameError, setSurnameError] = useState('');
   const [valid, setValid] = useState('');
   const [feedback, setFeedback] = useState('');
 
   const handleSignUp = async () => {
+    // Validate first name
+    const firstNameResult = validateName(firstName);
+    const surnameResult = validateName(surname);
+
+    setFirstNameError(firstNameResult.valid ? '' : firstNameResult.error);
+    setSurnameError(surnameResult.valid ? '' : surnameResult.error);
+
+    if (!firstNameResult.valid || !surnameResult.valid) {
+      return;
+    }
+
+    const trimmedFirstName = firstName.trim();
+    const trimmedSurname = surname.trim();
+    const displayName = `${trimmedFirstName} ${trimmedSurname}`;
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await updateProfile(user, { displayName: email });
-      await setDoc(doc(db, 'users', user.uid), { name: email, admin: '' });
+      await updateProfile(user, { displayName });
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: trimmedFirstName,
+        surname: trimmedSurname,
+        name: displayName,
+        admin: '',
+      });
       setValid('is-valid');
-      setFeedback('Sign up successful! Verification email sent.');
+      setFeedback('Sign up successful!');
       setTimeout(() => {
         closeModal();
         setValid('');
         setFeedback('');
-      }, 1000);
+        setFirstName('');
+        setSurname('');
+        setEmail('');
+        setPassword('');
+      }, 2000);
     } catch (error) {
       setValid('is-invalid');
-      setFeedback('Error signing up. Please try again.');
+      setFeedback(error.message);
       console.error('Error signing up:', error);
     }
   };
@@ -219,6 +253,14 @@ const SignUpModal = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'firstName') {
+      setFirstName(value);
+      setFirstNameError('');
+    }
+    if (name === 'surname') {
+      setSurname(value);
+      setSurnameError('');
+    }
     if (name === 'email') setEmail(value);
     if (name === 'password') setPassword(value);
     setValid('');
@@ -232,11 +274,44 @@ const SignUpModal = () => {
           We use anonymous authentication provided by Google. Your account is
           attached to your device signature.
         </p>
-        <p>The email will be used as your username for bidding!</p>
         <form onSubmit={(e) => e.preventDefault()}>
           <div className='form-floating mb-3'>
             <input
               autoFocus
+              id='firstName-input'
+              type='text'
+              name='firstName'
+              maxLength={50}
+              className={`form-control ${firstNameError ? 'is-invalid' : ''}`}
+              value={firstName}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your first name'
+            />
+            <label>First Name</label>
+            {firstNameError && (
+              <div className='invalid-feedback'>{firstNameError}</div>
+            )}
+          </div>
+          <div className='form-floating mb-3'>
+            <input
+              id='surname-input'
+              type='text'
+              name='surname'
+              maxLength={50}
+              className={`form-control ${surnameError ? 'is-invalid' : ''}`}
+              value={surname}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your surname'
+            />
+            <label>Surname</label>
+            {surnameError && (
+              <div className='invalid-feedback'>{surnameError}</div>
+            )}
+          </div>
+          <div className='form-floating mb-3'>
+            <input
               id='email-input'
               type='email'
               name='email'
@@ -262,6 +337,9 @@ const SignUpModal = () => {
             <label>Password</label>
           </div>
           <div className={`invalid-feedback ${valid === 'is-invalid' ? 'd-block' : ''}`}>
+            {feedback}
+          </div>
+          <div className={`valid-feedback ${valid === 'is-valid' ? 'd-block' : ''}`}>
             {feedback}
           </div>
         </form>
