@@ -226,7 +226,10 @@ const SignUpModal = () => {
         firstName: trimmedFirstName,
         surname: trimmedSurname,
         name: displayName,
+        email: email.trim(),
+        role: '',
         admin: '',
+        createdAt: new Date(),
       });
       setValid('is-valid');
       setFeedback('Sign up successful!');
