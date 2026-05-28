@@ -49,12 +49,19 @@ const BidderListModal = ({ show, onHide, item }) => {
     Promise.all(
       uniqueUids.map((uid) =>
         getDoc(doc(db, "users", uid))
-          .then((snap) => ({
-            uid,
-            firstName: snap.exists() ? snap.get("firstName") || "" : "",
-            surname: snap.exists() ? snap.get("surname") || "" : "",
-            email: snap.exists() ? snap.get("email") || "" : "",
-          }))
+          .then((snap) => {
+            if (!snap.exists()) return { uid, firstName: "Unknown", surname: "", email: "" };
+            const data = snap.data();
+            // Support legacy users who only have 'name' field
+            let firstName = data.firstName || "";
+            let surname = data.surname || "";
+            if (!firstName && !surname && data.name) {
+              const parts = data.name.split(" ");
+              firstName = parts[0] || "";
+              surname = parts.slice(1).join(" ") || "";
+            }
+            return { uid, firstName: firstName || "Unknown", surname, email: data.email || "" };
+          })
           .catch(() => ({ uid, firstName: "Unknown", surname: "", email: "" }))
       )
     ).then((users) => {
