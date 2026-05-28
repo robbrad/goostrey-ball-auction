@@ -3,12 +3,13 @@ import PropTypes from "prop-types";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
+import { resolveRole } from "../utils/roleResolution";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [admin, setAdmin] = useState(false);
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,23 +18,21 @@ export const AuthProvider = ({ children }) => {
         console.debug(`Signed-in: name=${firebaseUser.displayName}, uid=${firebaseUser.uid}`);
         setUser(firebaseUser);
 
-        // Check if user is admin
+        // Resolve user role from Firestore document
         try {
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const docSnap = await getDoc(userDocRef);
-          if (docSnap.exists() && docSnap.data().admin) {
-            console.debug("User is admin");
-            setAdmin(true);
-          } else {
-            setAdmin(false);
-          }
+          const userDoc = docSnap.exists() ? docSnap.data() : {};
+          const resolvedRole = resolveRole(userDoc);
+          console.debug(`User role resolved: ${resolvedRole}`);
+          setRole(resolvedRole);
         } catch (error) {
-          console.error("Error fetching admin status:", error);
-          setAdmin(false);
+          console.error("Error fetching user role:", error);
+          setRole("");
         }
       } else {
         setUser(null);
-        setAdmin(false);
+        setRole("");
       }
       setLoading(false);
     });
@@ -50,8 +49,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Backward-compatible admin getter: true for admin or editor roles (grants access to admin page)
+  const admin = role === "admin" || role === "editor";
+
   return (
-    <AuthContext.Provider value={{ user, admin, loading, signOutUser }}>
+    <AuthContext.Provider value={{ user, role, admin, loading, signOutUser }}>
       {children}
     </AuthContext.Provider>
   );

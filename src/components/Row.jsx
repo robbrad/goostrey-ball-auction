@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { formatTime, formatMoney } from "../utils/formatString";
+import { formatTime, formatMoney, formatField } from "../utils/formatString";
 import { itemStatus } from "../utils/itemStatus";
-import { getDoc, doc } from "firebase/firestore";
+import { getDoc, doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { editItems } from "../firebase/utils";
+import { useAuth } from "../contexts/AuthProvider";
+import { computeExtendedTime } from "../utils/timeExtension";
 
-export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onReservePriceChange, onDelete }) => {
+export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onReservePriceChange, onDelete, onEdit, onShowBidders }) => {
   const [amount, setAmount] = useState(item.startingPrice);
   const [bids, setBids] = useState(0);
   const [winner, setWinner] = useState("");
   const [timeLeft, setTimeLeft] = useState("");
+  const { role } = useAuth();
 
   useEffect(() => {
     const status = itemStatus(item);
@@ -41,6 +44,34 @@ export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onRes
     requestAnimationFrame(updateTimer);
   }, [item.endTime]);
 
+  const handleExtend = async (minutes) => {
+    try {
+      const currentEndTime = item.endTime instanceof Date ? item.endTime : new Date(item.endTime);
+      const newEndTime = computeExtendedTime(currentEndTime, minutes);
+      const fieldKey = formatField(item.id, 0);
+      const docRef = doc(db, "auction", "items");
+      await updateDoc(docRef, {
+        [`${fieldKey}.endTime`]: Timestamp.fromDate(newEndTime),
+      });
+    } catch (error) {
+      console.error("Failed to extend time:", error);
+      alert("Failed to extend time. Please try again.");
+    }
+  };
+
+  const handleCloseNow = async () => {
+    try {
+      const fieldKey = formatField(item.id, 0);
+      const docRef = doc(db, "auction", "items");
+      await updateDoc(docRef, {
+        [`${fieldKey}.endTime`]: Timestamp.fromDate(new Date()),
+      });
+    } catch (error) {
+      console.error("Failed to close item:", error);
+      alert("Failed to close item. Please try again.");
+    }
+  };
+
   const reservePriceDisplay = item.reservePrice != null && item.reservePrice > 0
     ? formatMoney(item.currency, item.reservePrice)
     : "—";
@@ -61,38 +92,83 @@ export const Row = ({ item, reservePriceInput: ReservePriceInputComponent, onRes
           reservePriceDisplay
         )}
       </td>
-      <td>{bids}</td>
+      <td>
+        <button
+          className="btn btn-link p-0"
+          onClick={() => onShowBidders && onShowBidders(item)}
+          title="View bidders"
+        >
+          {bids}
+        </button>
+      </td>
       <td>{winner}</td>
       <td>{timeLeft}</td>
       <td>
-        <button
-          className="btn btn-primary me-3"
-          onClick={() => editItems(item.id, true, false)}
-        >
-          Update
-        </button>
-        <button
-          className="btn btn-primary me-3"
-          onClick={() => editItems(item.id, false, true)}
-        >
-          Reset
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={() => editItems(item.id, true, true)}
-        >
-          Update & Reset
-        </button>
-        <button
-          className="btn btn-danger"
-          onClick={() => {
-            if (window.confirm("Are you sure?")) {
-              onDelete(item.id);
-            }
-          }}
-        >
-          Delete
-        </button>
+        <div className="d-flex flex-wrap gap-1">
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => editItems(item.id, true, false)}
+          >
+            Update
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => editItems(item.id, false, true)}
+          >
+            Reset
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => editItems(item.id, true, true)}
+          >
+            Update &amp; Reset
+          </button>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => handleExtend(5)}
+            title="Extend 5 minutes"
+          >
+            +5m
+          </button>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => handleExtend(15)}
+            title="Extend 15 minutes"
+          >
+            +15m
+          </button>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => handleExtend(30)}
+            title="Extend 30 minutes"
+          >
+            +30m
+          </button>
+          <button
+            className="btn btn-warning btn-sm"
+            onClick={handleCloseNow}
+          >
+            Close Now
+          </button>
+          <button
+            className="btn btn-info btn-sm"
+            onClick={() => onEdit && onEdit(item)}
+          >
+            Edit
+          </button>
+          {role === "admin" && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => {
+                if (window.confirm("Are you sure?")) {
+                  onDelete(item.id);
+                }
+              }}
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -106,8 +182,11 @@ Row.propTypes = {
     id: PropTypes.number.isRequired,
     title: PropTypes.string.isRequired,
     reservePrice: PropTypes.number,
+    bids: PropTypes.object,
   }),
   reservePriceInput: PropTypes.elementType,
   onReservePriceChange: PropTypes.func,
   onDelete: PropTypes.func,
+  onEdit: PropTypes.func,
+  onShowBidders: PropTypes.func,
 };

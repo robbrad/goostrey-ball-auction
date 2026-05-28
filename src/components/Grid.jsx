@@ -2,8 +2,9 @@ import { useContext } from "react";
 import { Item } from "./Item";
 import { ItemsContext } from "../contexts/ItemsProvider";
 
-const Grid = () => {
-  const { items } = useContext(ItemsContext);
+const Grid = ({ items: itemsProp }) => {
+  const { items: contextItems } = useContext(ItemsContext);
+  const items = itemsProp !== undefined ? itemsProp : contextItems;
 
   return (
     <div className="row row-cols-1 row-cols-md-3 g-4">

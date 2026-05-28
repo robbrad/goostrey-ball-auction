@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext } from "react";
+import { useEffect, useState, useRef, createContext } from "react";
 import PropTypes from "prop-types";
 import { db } from "../firebase/config";
 import { onSnapshot, doc, setDoc } from "firebase/firestore";
@@ -8,6 +8,7 @@ export const ItemsContext = createContext();
 
 export const ItemsProvider = ({ demo, children }) => {
   const [items, setItems] = useState([]);
+  const previousItemsRef = useRef([]);
 
   useEffect(() => {
     const docRef = doc(db, "auction", "items");
@@ -15,7 +16,9 @@ export const ItemsProvider = ({ demo, children }) => {
       if (doc.exists()) {
         // Populate items state
         console.debug("<ItemsProvider /> read from auction/items");
-        setItems(unflattenItems(doc, demo));
+        const newItems = unflattenItems(doc, demo);
+        previousItemsRef.current = items;
+        setItems(newItems);
       } else {
         // Create empty doc
         console.debug("<ItemsProvider /> write to auction/items");
@@ -27,7 +30,7 @@ export const ItemsProvider = ({ demo, children }) => {
   }, [demo]);
 
   return (
-    <ItemsContext.Provider value={{ items }}>{children}</ItemsContext.Provider>
+    <ItemsContext.Provider value={{ items, previousItems: previousItemsRef.current }}>{children}</ItemsContext.Provider>
   );
 };
 

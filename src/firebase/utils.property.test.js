@@ -10,6 +10,12 @@ import { formatField } from "../utils/formatString.js";
  * Validates: Requirements 6.1, 6.2
  */
 
+/**
+ * Feature: admin-user-enhancements, Property 4: Item edit preserves existing bids
+ *
+ * Validates: Requirements 4.3
+ */
+
 // --- Arbitraries / Generators ---
 
 /**
@@ -321,6 +327,176 @@ describe("Feature: auction-overhaul, Property 10: Reset operation removes only b
               expect(originalData.reservePrice).toBeTypeOf("number");
             }
           }
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+});
+
+
+// --- Property 4: Item edit preserves existing bids (admin-user-enhancements) ---
+
+describe("Feature: admin-user-enhancements, Property 4: Item edit preserves existing bids", () => {
+  /**
+   * Validates: Requirements 4.3
+   *
+   * For any auction item with existing bids, when computing the Firestore update
+   * for an item edit operation, the resulting updates object SHALL NOT contain any
+   * bid fields (bid > 0), and SHALL only modify the item metadata field (bid 0)
+   * with the new values while preserving the existing reservePrice.
+   */
+
+  /**
+   * Generates a single item with existing bids and a new metadata object for editing.
+   * Returns { itemId, fields, currentDocData, newMetadata, bidFields, configField, originalReservePrice }
+   */
+  const editScenarioArb = fc
+    .record({
+      itemId: fc.integer({ min: 1, max: 99999 }),
+      numBids: fc.integer({ min: 1, max: 10 }),
+      reservePrice: fc.oneof(
+        fc.constant(null),
+        fc.integer({ min: 1, max: 99999999 }).map((cents) => cents / 100)
+      ),
+      newTitle: fc.string({ minLength: 1, maxLength: 30 }),
+      newSubtitle: fc.string({ minLength: 1, maxLength: 30 }),
+      newDetail: fc.string({ minLength: 0, maxLength: 50 }),
+      newAmount: fc.integer({ min: 0, max: 10000 }),
+    })
+    .chain(({ itemId, numBids, reservePrice, newTitle, newSubtitle, newDetail, newAmount }) =>
+      fc
+        .array(
+          fc.integer({ min: 100, max: 99999999 }).map((cents) => cents / 100),
+          { minLength: numBids, maxLength: numBids }
+        )
+        .map((bidAmounts) => {
+          const configField = formatField(itemId, 0);
+          const currentDocData = {};
+          const fields = [];
+          const bidFields = [];
+
+          // Item metadata (bid 0)
+          currentDocData[configField] = {
+            id: itemId,
+            title: `Original Title ${itemId}`,
+            subtitle: `Original Subtitle ${itemId}`,
+            detail: `Original Detail ${itemId}`,
+            currency: "£",
+            amount: 0,
+            endTime: "2025-07-01T18:00:00Z",
+            reservePrice,
+          };
+          fields.push(configField);
+
+          // Existing bids (bid > 0)
+          for (let b = 1; b <= numBids; b++) {
+            const bidField = formatField(itemId, b);
+            currentDocData[bidField] = {
+              amount: bidAmounts[b - 1],
+              uid: `user-${b}`,
+            };
+            fields.push(bidField);
+            bidFields.push(bidField);
+          }
+
+          const newMetadata = {
+            id: itemId,
+            title: newTitle,
+            subtitle: newSubtitle,
+            detail: newDetail,
+            currency: "£",
+            amount: newAmount,
+            endTime: "2025-08-01T18:00:00Z",
+          };
+
+          return {
+            itemId,
+            fields,
+            currentDocData,
+            newMetadata,
+            bidFields,
+            configField,
+            originalReservePrice: reservePrice,
+          };
+        })
+    );
+
+  it("edit updates object never contains bid fields (bid > 0)", () => {
+    fc.assert(
+      fc.property(
+        editScenarioArb,
+        ({ fields, currentDocData, newMetadata, bidFields }) => {
+          const DELETE_SENTINEL = Symbol("DELETE");
+
+          const updates = computeEditUpdates({
+            items: [newMetadata],
+            fields,
+            currentDocData,
+            update: true,
+            reset: false,
+            deleteFieldSentinel: DELETE_SENTINEL,
+          });
+
+          // No bid field (bid > 0) should appear in the updates object
+          for (const bidField of bidFields) {
+            expect(updates[bidField]).toBeUndefined();
+          }
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+
+  it("edit updates only the bid-0 metadata field with new values", () => {
+    fc.assert(
+      fc.property(
+        editScenarioArb,
+        ({ fields, currentDocData, newMetadata, configField }) => {
+          const DELETE_SENTINEL = Symbol("DELETE");
+
+          const updates = computeEditUpdates({
+            items: [newMetadata],
+            fields,
+            currentDocData,
+            update: true,
+            reset: false,
+            deleteFieldSentinel: DELETE_SENTINEL,
+          });
+
+          // The config field (bid 0) should be present in updates
+          expect(updates[configField]).toBeDefined();
+
+          // The updated metadata should contain the new values
+          expect(updates[configField].title).toBe(newMetadata.title);
+          expect(updates[configField].subtitle).toBe(newMetadata.subtitle);
+          expect(updates[configField].detail).toBe(newMetadata.detail);
+          expect(updates[configField].amount).toBe(newMetadata.amount);
+          expect(updates[configField].id).toBe(newMetadata.id);
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+
+  it("edit preserves the existing reservePrice in the updated metadata", () => {
+    fc.assert(
+      fc.property(
+        editScenarioArb,
+        ({ fields, currentDocData, newMetadata, configField, originalReservePrice }) => {
+          const DELETE_SENTINEL = Symbol("DELETE");
+
+          const updates = computeEditUpdates({
+            items: [newMetadata],
+            fields,
+            currentDocData,
+            update: true,
+            reset: false,
+            deleteFieldSentinel: DELETE_SENTINEL,
+          });
+
+          // The reservePrice in the updated field must match the original
+          expect(updates[configField].reservePrice).toBe(originalReservePrice);
         }
       ),
       { numRuns: 200 }

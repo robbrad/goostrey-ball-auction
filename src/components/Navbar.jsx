@@ -9,7 +9,11 @@ const Navbar = () => {
   const openModal = useContext(ModalsContext).openModal;
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, admin, signOutUser } = useAuth();
+  const { user, role, admin, signOutUser } = useAuth();
+
+  // Determine effective role: use `role` from context, fall back to legacy `admin` boolean
+  const effectiveRole = role || (admin ? "admin" : "");
+  const hasAdminAccess = effectiveRole === "admin" || effectiveRole === "editor";
 
   const [adminButtonText, setAdminButtonText] = useState("Admin");
 
@@ -21,6 +25,10 @@ const Navbar = () => {
       navigate(import.meta.env.BASE_URL + "admin");
       setAdminButtonText("Home");
     }
+  };
+
+  const handleMyBids = () => {
+    navigate(import.meta.env.BASE_URL + "my-bids");
   };
 
   const handleSignOut = () => {
@@ -56,9 +64,14 @@ const Navbar = () => {
           <div className="navbar-brand">
             {user ? `Hi ${extractFirstName(user.displayName)}` : ""}
           </div>
-          {admin && (
+          {hasAdminAccess && (
             <button onClick={handleAdmin} className="btn btn-secondary me-2">
               {adminButtonText}
+            </button>
+          )}
+          {user && (
+            <button onClick={handleMyBids} className="btn btn-secondary me-2">
+              My Bids
             </button>
           )}
           {user ? (

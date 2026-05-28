@@ -122,4 +122,50 @@ const validateReservePrice = (value) => {
   return { valid: true, error: "" };
 };
 
-export { isWhitespaceOnly, validateName, validateBidAmount, validateReservePrice };
+/**
+ * Validates an item form data object for creating or editing auction items.
+ * Rules:
+ * - title must not be empty or whitespace-only
+ * - startingPrice must be a non-negative number
+ * - endTime must be a valid ISO datetime string representing a future date
+ * @param {{ title: string, startingPrice: *, endTime: string }} data
+ * @returns {{ valid: boolean, errors: { title?: string, startingPrice?: string, endTime?: string } }}
+ */
+const validateItemForm = (data) => {
+  const errors = {};
+
+  // Validate title: reject empty or whitespace-only
+  if (typeof data.title !== "string" || data.title.trim().length === 0) {
+    errors.title = "Title is required";
+  }
+
+  // Validate startingPrice: must be numeric and non-negative
+  const price = Number(data.startingPrice);
+  if (
+    data.startingPrice === null ||
+    data.startingPrice === undefined ||
+    data.startingPrice === "" ||
+    isNaN(price) ||
+    price < 0
+  ) {
+    errors.startingPrice = "Starting price must be a non-negative number";
+  }
+
+  // Validate endTime: must be a valid ISO datetime string in the future
+  const endDate = new Date(data.endTime);
+  if (
+    typeof data.endTime !== "string" ||
+    data.endTime.trim().length === 0 ||
+    isNaN(endDate.getTime()) ||
+    endDate.getTime() <= Date.now()
+  ) {
+    errors.endTime = "End time must be a valid future date";
+  }
+
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export { isWhitespaceOnly, validateName, validateBidAmount, validateReservePrice, validateItemForm };

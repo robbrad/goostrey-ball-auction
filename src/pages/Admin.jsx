@@ -4,18 +4,31 @@ import { db } from "../firebase/config";
 import { editItems, deleteItem } from "../firebase/utils";
 import { formatField } from "../utils/formatString";
 import { ItemsContext } from "../contexts/ItemsProvider";
+import { useAuth } from "../contexts/AuthProvider";
+import { generateCSV } from "../utils/exportCSV";
 import Table from "../components/Table";
+import Dashboard from "../components/Dashboard";
+import ItemFormModal from "../components/ItemFormModal";
+import BidderListModal from "../components/BidderListModal";
 import { ReservePriceInput } from "../components/ReservePriceInput";
 
 function AdminPage() {
   const { items } = useContext(ItemsContext);
+  const { role } = useAuth();
   const [statusMessage, setStatusMessage] = useState("");
-  const [statusType, setStatusType] = useState("success"); // "success" or "danger"
+  const [statusType, setStatusType] = useState("success");
+
+  // Item form modal state
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  // Bidder list modal state
+  const [showBidderList, setShowBidderList] = useState(false);
+  const [bidderListItem, setBidderListItem] = useState(null);
 
   const showMessage = (message, type = "success") => {
     setStatusMessage(message);
     setStatusType(type);
-    // Auto-clear after 5 seconds
     setTimeout(() => setStatusMessage(""), 5000);
   };
 
@@ -35,6 +48,10 @@ function AdminPage() {
   };
 
   const handleResetAll = async () => {
+    if (role !== "admin") {
+      showMessage("Insufficient permissions", "danger");
+      return;
+    }
     try {
       await editItems(undefined, false, true);
       showMessage("Reset All completed successfully.");
@@ -83,6 +100,52 @@ function AdminPage() {
     }
   }, []);
 
+  // Add Item button handler
+  const handleAddItem = () => {
+    setEditItem(null);
+    setShowItemForm(true);
+  };
+
+  // Edit item callback (passed to Table/Row)
+  const handleEdit = useCallback((item) => {
+    setEditItem(item);
+    setShowItemForm(true);
+  }, []);
+
+  // Show bidders callback (passed to Table/Row)
+  const handleShowBidders = useCallback((item) => {
+    setBidderListItem(item);
+    setShowBidderList(true);
+  }, []);
+
+  // CSV Export handler (admin only)
+  const handleExportCSV = () => {
+    if (role !== "admin") {
+      showMessage("Insufficient permissions", "danger");
+      return;
+    }
+
+    const csvString = generateCSV(items, {});
+
+    // Check if there are any data rows (beyond the header)
+    const lines = csvString.split("\n");
+    if (lines.length <= 1) {
+      showMessage("No results available for export", "info");
+      return;
+    }
+
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `auction-results-${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container mt-3">
       {statusMessage && (
@@ -99,31 +162,68 @@ function AdminPage() {
           ></button>
         </div>
       )}
+
+      <Dashboard />
+
       <div className="d-flex justify-content-between mb-3">
-        <button
-          className="btn btn-primary me-3"
-          onClick={handleUpdateAll}
-        >
-          Update All
-        </button>
-        <button
-          className="btn btn-primary me-3"
-          onClick={handleResetAll}
-        >
-          Reset All
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={handleUpdateAndResetAll}
-        >
-          Update & Reset All
-        </button>
+        <div>
+          <button
+            className="btn btn-success me-3"
+            onClick={handleAddItem}
+          >
+            Add Item
+          </button>
+          <button
+            className="btn btn-primary me-3"
+            onClick={handleUpdateAll}
+          >
+            Update All
+          </button>
+          {role === "admin" && (
+            <button
+              className="btn btn-primary me-3"
+              onClick={handleResetAll}
+            >
+              Reset All
+            </button>
+          )}
+          <button
+            className="btn btn-primary"
+            onClick={handleUpdateAndResetAll}
+          >
+            Update & Reset All
+          </button>
+        </div>
+        {role === "admin" && (
+          <button
+            className="btn btn-outline-secondary"
+            onClick={handleExportCSV}
+          >
+            Export CSV
+          </button>
+        )}
       </div>
+
       <Table
         reservePriceInput={ReservePriceInput}
         onReservePriceChange={handleReservePriceChange}
         onDelete={handleDelete}
+        onEdit={handleEdit}
+        onShowBidders={handleShowBidders}
         items={items}
+      />
+
+      <ItemFormModal
+        show={showItemForm}
+        onHide={() => setShowItemForm(false)}
+        item={editItem}
+        items={items}
+      />
+
+      <BidderListModal
+        show={showBidderList}
+        onHide={() => setShowBidderList(false)}
+        item={bidderListItem}
       />
     </div>
   );
