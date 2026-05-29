@@ -1,7 +1,7 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import PropTypes from "prop-types";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, signOut, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 import { resolveRole } from "../utils/roleResolution";
 
@@ -11,6 +11,37 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Handle email link sign-in completion
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) {
+        email = window.prompt('Please provide your email for confirmation');
+      }
+      if (email) {
+        signInWithEmailLink(auth, email, window.location.href)
+          .then(async (result) => {
+            window.localStorage.removeItem('emailForSignIn');
+            const userDocRef = doc(db, "users", result.user.uid);
+            const docSnap = await getDoc(userDocRef);
+            if (!docSnap.exists()) {
+              const name = result.user.displayName || email.split('@')[0];
+              await setDoc(userDocRef, {
+                firstName: name,
+                surname: '',
+                name,
+                email,
+                role: '',
+                admin: '',
+                createdAt: new Date(),
+              });
+            }
+          })
+          .catch((error) => console.error("Email link sign-in error:", error));
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
