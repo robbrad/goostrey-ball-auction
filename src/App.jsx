@@ -13,7 +13,7 @@ import { ItemsProvider } from "./contexts/ItemsProvider";
 import { NotificationsProvider } from "./contexts/NotificationsProvider";
 import { ModalsProvider } from "./contexts/ModalsProvider";
 import Navbar from "./components/Navbar";
-import { SignUpModal, LoginModal, ForgotPasswordModal } from "./components/Modal";
+import { SignUpModal, LoginModal, ForgotPasswordModal, EmailLinkModal } from "./components/Modal";
 import HomePage from "./pages/Home";
 import AdminPage from "./pages/Admin";
 import Footer from "./components/Footer";
@@ -68,6 +68,7 @@ function App() {
         <LoginModal />
         <SignUpModal />
         <ForgotPasswordModal />
+        <EmailLinkModal />
         <Routes>
           <Route path={import.meta.env.BASE_URL} Component={HomePage} />
           <Route

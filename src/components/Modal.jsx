@@ -370,7 +370,6 @@ const LoginModal = () => {
   const [password, setPassword] = useState('');
   const [valid, setValid] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [emailLinkSent, setEmailLinkSent] = useState(false);
 
   if (currentModal !== ModalTypes.LOGIN) return null;
 
@@ -432,27 +431,9 @@ const LoginModal = () => {
     }
   };
 
-  const handleEmailLinkSignIn = async () => {
-    if (!email) {
-      setValid('is-invalid');
-      setFeedback('Please enter your email address.');
-      return;
-    }
-    try {
-      const actionCodeSettings = {
-        url: window.location.origin + import.meta.env.BASE_URL,
-        handleCodeInApp: true,
-      };
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', email);
-      setEmailLinkSent(true);
-      setValid('is-valid');
-      setFeedback('Sign-in link sent! Check your email.');
-    } catch (error) {
-      setValid('is-invalid');
-      setFeedback('Error sending sign-in link. Please try again.');
-      console.error('Email link error:', error);
-    }
+  const handleEmailLinkSignIn = () => {
+    closeModal();
+    openModal(ModalTypes.EMAIL_LINK);
   };
 
   const handleKeyDown = (e) => {
@@ -467,7 +448,6 @@ const LoginModal = () => {
     if (name === 'password') setPassword(value);
     setValid('');
     setFeedback('');
-    setEmailLinkSent(false);
   };
 
   const handleForgotPassword = () => {
@@ -537,11 +517,10 @@ const LoginModal = () => {
       <div className='modal-footer d-flex justify-content-between'>
         <button
           type='button'
-          className='btn btn-outline-primary'
+          className='btn btn-link p-0'
           onClick={handleEmailLinkSignIn}
-          disabled={emailLinkSent}
         >
-          {emailLinkSent ? 'Link sent ✓' : 'Send sign-in link'}
+          Sign in with email link instead
         </button>
         <div>
           <button type='button' className='btn btn-secondary me-2' onClick={closeModal}>
@@ -637,4 +616,76 @@ const ForgotPasswordModal = () => {
   );
 };
 
-export { ItemModal, SignUpModal, LoginModal, ForgotPasswordModal };
+const EmailLinkModal = () => {
+  const { closeModal, currentModal } = useContext(ModalsContext);
+  const [email, setEmail] = useState('');
+  const [valid, setValid] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  if (currentModal !== ModalTypes.EMAIL_LINK) return null;
+
+  const handleSendLink = async () => {
+    if (!email) {
+      setValid('is-invalid');
+      setFeedback('Please enter your email address.');
+      return;
+    }
+    try {
+      const actionCodeSettings = {
+        url: window.location.origin + import.meta.env.BASE_URL,
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', email);
+      setValid('is-valid');
+      setFeedback('Sign-in link sent! Check your email.');
+    } catch (error) {
+      setValid('is-invalid');
+      setFeedback('Error sending sign-in link. Please try again.');
+      console.error('Email link error:', error);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSendLink();
+  };
+
+  return (
+    <Modal type={ModalTypes.EMAIL_LINK} title='Sign in with email link'>
+      <div className='modal-body'>
+        <p>Enter your email and we'll send you a link to sign in — no password needed.</p>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className='form-floating mb-3'>
+            <input
+              autoFocus
+              id='email-link-input'
+              type='email'
+              className={`form-control ${valid}`}
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setValid(''); setFeedback(''); }}
+              onKeyDown={handleKeyDown}
+              placeholder='Enter your email'
+            />
+            <label>Email</label>
+          </div>
+          <div className={`invalid-feedback ${valid === 'is-invalid' ? 'd-block' : ''}`}>
+            {feedback}
+          </div>
+          <div className={`valid-feedback ${valid === 'is-valid' ? 'd-block' : ''}`}>
+            {feedback}
+          </div>
+        </form>
+      </div>
+      <div className='modal-footer'>
+        <button type='button' className='btn btn-secondary' onClick={closeModal}>
+          Cancel
+        </button>
+        <button type='button' className='btn btn-primary' onClick={handleSendLink}>
+          Send sign-in link
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+export { ItemModal, SignUpModal, LoginModal, ForgotPasswordModal, EmailLinkModal };
